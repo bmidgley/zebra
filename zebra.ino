@@ -1,8 +1,8 @@
 #include <FastLED.h>
 
-#define piezoPin 4
+#define piezoPin 3
 
-#define LED_PIN     3
+#define LED_PIN     4
 #define NUM_LEDS    15
 #define BRIGHTNESS  64
 #define LED_TYPE    WS2811
@@ -42,8 +42,7 @@ void setup() {
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(  BRIGHTNESS );
     
-//    currentPalette = RainbowColors_p;
-    SetupBlackAndWhiteStripedPalette();
+    currentPalette = RainbowColors_p;
     currentBlending = LINEARBLEND;
     
     pinMode(piezoPin, INPUT);
@@ -55,14 +54,18 @@ void loop()
     //ChangePalettePeriodically();
     
     static uint8_t startIndex = 0;
-    startIndex = startIndex + 1; /* motion speed */
+    //startIndex = startIndex + 1; /* motion speed */
     
     FillLEDsFromPaletteColors( startIndex);
     
     FastLED.show();
-    FastLED.delay(1000 / UPDATES_PER_SECOND);
+    //FastLED.delay(1000 / UPDATES_PER_SECOND);
+
+    // observe local max/min of the input
+    // switch to digital and watch for noise indicator
+    // check the docs for the sensor elegoo.com
     
-    //startIndex += analogRead(piezoPin);
+    startIndex = map(analogRead(piezoPin), 0, 1023, 0, NUM_LEDS);
 }
 
 void FillLEDsFromPaletteColors( uint8_t colorIndex)
@@ -70,8 +73,10 @@ void FillLEDsFromPaletteColors( uint8_t colorIndex)
     uint8_t brightness = 255;
     
     for( int i = 0; i < NUM_LEDS; i++) {
-        leds[i] = ColorFromPalette( currentPalette, colorIndex, brightness, currentBlending);
-        colorIndex += 3;
+        if(colorIndex > i)
+            leds[i] = ColorFromPalette( currentPalette, 0, brightness, currentBlending);
+        else
+            leds[i] = 0;
     }
 }
 
