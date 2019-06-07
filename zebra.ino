@@ -9,10 +9,12 @@
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
 
-#define UPDATES_PER_SECOND 100
+#define UPDATES_PER_SECOND 10
 
 CRGBPalette16 currentPalette;
 TBlendType    currentBlending;
+
+int motion = 0;
 
 extern CRGBPalette16 myRedWhiteBluePalette;
 extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
@@ -26,25 +28,34 @@ void setup() {
     currentBlending = LINEARBLEND;
     
     pinMode(piezoPin, INPUT);
+
+    GIMSK |= (1 << PCIE);   // pin change interrupt enable
+    PCMSK |= (1 << PCINT3); // pin change interrupt enabled for PCINT3
+    sei();                  // enable interrupts
+}
+
+ISR(PCINT0_vect)
+{
+    motion = NUM_LEDS;
 }
 
 void loop()
 {
-    //ChangePalettePeriodically();
-    
     static uint8_t startIndex = 0;
     //startIndex = startIndex + 1; /* motion speed */
     
-    FillLEDsFromPaletteColors( startIndex);
+    FillLEDsFromPaletteColors(motion);
     
     FastLED.show();
-    //FastLED.delay(1000 / UPDATES_PER_SECOND);
+    FastLED.delay(1000 / UPDATES_PER_SECOND);
 
     // observe local max/min of the input
     // switch to digital and watch for noise indicator
     // check the docs for the sensor elegoo.com
     
-    startIndex = map(analogRead(piezoPin), 0, 1023, 0, NUM_LEDS);
+    //startIndex = map(analogRead(piezoPin), 0, 1023, 0, NUM_LEDS);
+
+    if(motion > 0) motion--;
 }
 
 void FillLEDsFromPaletteColors( uint8_t colorIndex)
