@@ -9,7 +9,7 @@
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
 
-#define UPDATES_PER_SECOND 3
+#define UPDATES_PER_SECOND 10
 
 CRGBPalette16 currentPalette;
 TBlendType    currentBlending;
@@ -27,6 +27,9 @@ void setup() {
     currentPalette = RainbowColors_p;
     currentBlending = LINEARBLEND;
     
+    SetupRedAndGreenPalette();
+    currentBlending = LINEARBLEND;
+    
     pinMode(piezoPin, INPUT);
 
     GIMSK |= (1 << PCIE);   // pin change interrupt enable
@@ -36,7 +39,7 @@ void setup() {
 
 ISR(PCINT0_vect)
 {
-    motion = NUM_LEDS;
+    motion = 255;
 }
 
 void loop()
@@ -44,38 +47,28 @@ void loop()
     static uint8_t startIndex = 0;
     startIndex = (startIndex + 1) % NUM_LEDS; /* motion speed */
     
-    XmasLEDs(startIndex);
-    
-    FastLED.setBrightness(motion);
+    FillLEDsFromPaletteColors(startIndex, motion);
+
     FastLED.show();
     FastLED.delay(1000 / UPDATES_PER_SECOND);
 
-    // observe local max/min of the input
-    // switch to digital and watch for noise indicator
-    // check the docs for the sensor elegoo.com
-    
     //startIndex = map(analogRead(piezoPin), 0, 1023, 0, NUM_LEDS);
 
     if(motion > 0) motion--;
 }
 
-void FillLEDsFromPaletteColors( uint8_t colorIndex)
+void FillLEDsFromPaletteColors(uint8_t colorIndex, uint8_t brightness)
 {
-    uint8_t brightness = 255;
-    
     for( int i = 0; i < NUM_LEDS; i++) {
-        if(colorIndex > i)
-            leds[i] = ColorFromPalette( currentPalette, 0, brightness, currentBlending);
-        else
-            leds[i] = 0;
+        leds[i] = ColorFromPalette(currentPalette, colorIndex, brightness, currentBlending);
+        colorIndex += 3;
     }
 }
 
-void XmasLEDs(uint8_t colorIndex)
+void XmasLEDs(uint8_t colorIndex, uint8_t brightness)
 {
     CRGB red = CHSV( HUE_RED, 255, 255);
     CRGB green  = CHSV( HUE_GREEN, 255, 255);
-    uint8_t brightness = 255;
 
     for( int i = 0; i < NUM_LEDS; i++) {
         if(colorIndex % 2 == i % 2)
@@ -123,19 +116,16 @@ void SetupTotallyRandomPalette()
     }
 }
 
-// This function sets up a palette of black and white stripes,
-// using code.  Since the palette is effectively an array of
-// sixteen CRGB colors, the various fill_* functions can be used
-// to set them up.
+// This function sets up a palette of black and white stripes.
 void SetupBlackAndWhiteStripedPalette()
 {
     // 'black out' all 16 palette entries...
     fill_solid( currentPalette, 16, CRGB::Black);
     // and set every fourth one to white.
     currentPalette[0] = CRGB::White;
-//    currentPalette[4] = CRGB::White;
-//    currentPalette[8] = CRGB::White;
-//    currentPalette[12] = CRGB::White;
+    currentPalette[4] = CRGB::White;
+    currentPalette[8] = CRGB::White;
+    currentPalette[12] = CRGB::White;
     
 }
 
@@ -153,11 +143,18 @@ void SetupPurpleAndGreenPalette()
                                    purple, purple, black,  black );
 }
 
+void SetupRedAndGreenPalette()
+{
+    CRGB red = CHSV( HUE_RED, 255, 255);
+    CRGB green  = CHSV( HUE_GREEN, 255, 255);
+    
+    currentPalette = CRGBPalette16(
+                                   green,  red,  green,  red,
+                                   green,  red,  green,  red,
+                                   green,  red,  green,  red,
+                                   green,  red,  green,  red );
+}
 
-// This example shows how to set up a static color palette
-// which is stored in PROGMEM (flash), which is almost always more
-// plentiful than RAM.  A static PROGMEM palette like this
-// takes up 64 bytes of flash.
 const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM =
 {
     CRGB::Red,
@@ -179,27 +176,3 @@ const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM =
     CRGB::Black,
     CRGB::Black
 };
-
-
-
-// Additionl notes on FastLED compact palettes:
-//
-// Normally, in computer graphics, the palette (or "color lookup table")
-// has 256 entries, each containing a specific 24-bit RGB color.  You can then
-// index into the color palette using a simple 8-bit (one byte) value.
-// A 256-entry color palette takes up 768 bytes of RAM, which on Arduino
-// is quite possibly "too many" bytes.
-//
-// FastLED does offer traditional 256-element palettes, for setups that
-// can afford the 768-byte cost in RAM.
-//
-// However, FastLED also offers a compact alternative.  FastLED offers
-// palettes that store 16 distinct entries, but can be accessed AS IF
-// they actually have 256 entries; this is accomplished by interpolating
-// between the 16 explicit entries to create fifteen intermediate palette
-// entries between each pair.
-//
-// So for example, if you set the first two explicit entries of a compact 
-// palette to Green (0,255,0) and Blue (0,0,255), and then retrieved 
-// the first sixteen entries from the virtual palette (of 256), you'd get
-// Green, followed by a smooth gradient from green-to-blue, and then Blue.
