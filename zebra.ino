@@ -39,13 +39,14 @@ void setup() {
 
 ISR(PCINT0_vect)
 {
+    if(motion < 250) ChangePalette();
     motion = 255;
 }
 
 void loop()
 {
     static uint8_t startIndex = 0;
-    startIndex = (startIndex + 1) % NUM_LEDS; /* motion speed */
+    startIndex = (startIndex + 1); /* motion speed */
     
     FillLEDsFromPaletteColors(startIndex, motion);
 
@@ -87,25 +88,42 @@ void XmasLEDs(uint8_t colorIndex, uint8_t brightness)
 // Additionally, you can manually define your own color palettes, or you can write
 // code that creates color palettes on the fly.  All are shown here.
 
-void ChangePalettePeriodically()
+void ChangePalette()
 {
-    uint8_t secondHand = (millis() / 1000) % 60;
-    static uint8_t lastSecond = 99;
-    
-    if( lastSecond != secondHand) {
-        lastSecond = secondHand;
-        if( secondHand ==  0)  { currentPalette = RainbowColors_p;         currentBlending = LINEARBLEND; }
-        if( secondHand == 10)  { currentPalette = RainbowStripeColors_p;   currentBlending = NOBLEND;  }
-        if( secondHand == 15)  { currentPalette = RainbowStripeColors_p;   currentBlending = LINEARBLEND; }
-        if( secondHand == 20)  { SetupPurpleAndGreenPalette();             currentBlending = LINEARBLEND; }
-        if( secondHand == 25)  { SetupTotallyRandomPalette();              currentBlending = LINEARBLEND; }
-        if( secondHand == 30)  { SetupBlackAndWhiteStripedPalette();       currentBlending = NOBLEND; }
-        if( secondHand == 35)  { SetupBlackAndWhiteStripedPalette();       currentBlending = LINEARBLEND; }
-        if( secondHand == 40)  { currentPalette = CloudColors_p;           currentBlending = LINEARBLEND; }
-        if( secondHand == 45)  { currentPalette = PartyColors_p;           currentBlending = LINEARBLEND; }
-        if( secondHand == 50)  { currentPalette = myRedWhiteBluePalette_p; currentBlending = NOBLEND;  }
-        if( secondHand == 55)  { currentPalette = myRedWhiteBluePalette_p; currentBlending = LINEARBLEND; }
+    static uint8_t next = 0;
+    next = (next + 1) % 21;
+
+    if(next % 2 == 1) {
+      SetupRedAndGreenPalette();
+      currentBlending = LINEARBLEND;
+      return;
     }
+    
+    switch(next / 2) {
+        case  0:
+          currentPalette = RainbowColors_p;         currentBlending = LINEARBLEND; break;
+        case  1:
+          currentPalette = RainbowStripeColors_p;   currentBlending = NOBLEND;  break;
+        case  2:
+          currentPalette = RainbowStripeColors_p;   currentBlending = LINEARBLEND; break;
+        case  3:
+          SetupPurpleAndGreenPalette();             currentBlending = LINEARBLEND; break;
+        case  4:
+          SetupTotallyRandomPalette();              currentBlending = LINEARBLEND; break;
+        case  5:
+          SetupBlackAndWhiteStripedPalette();       currentBlending = NOBLEND; break;
+        case  6:
+          SetupBlackAndWhiteStripedPalette();       currentBlending = LINEARBLEND; break;
+        case  7:
+          currentPalette = CloudColors_p;           currentBlending = LINEARBLEND; break;
+        case  8:
+          currentPalette = PartyColors_p;           currentBlending = LINEARBLEND; break;
+        case  9:
+          currentPalette = myRedWhiteBluePalette_p; currentBlending = NOBLEND;  break;
+        case 10:
+          currentPalette = myRedWhiteBluePalette_p; currentBlending = LINEARBLEND; break;
+    }
+
 }
 
 // This function fills the palette with totally random colors.
