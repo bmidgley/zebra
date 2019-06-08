@@ -9,7 +9,7 @@
 #define COLOR_ORDER GRB
 CRGB leds[NUM_LEDS];
 
-#define UPDATES_PER_SECOND 10
+#define UPDATES_PER_SECOND 3
 
 CRGBPalette16 currentPalette;
 TBlendType    currentBlending;
@@ -42,10 +42,11 @@ ISR(PCINT0_vect)
 void loop()
 {
     static uint8_t startIndex = 0;
-    //startIndex = startIndex + 1; /* motion speed */
+    startIndex = (startIndex + 1) % NUM_LEDS; /* motion speed */
     
-    FillLEDsFromPaletteColors(motion);
+    XmasLEDs(startIndex);
     
+    FastLED.setBrightness(motion);
     FastLED.show();
     FastLED.delay(1000 / UPDATES_PER_SECOND);
 
@@ -67,6 +68,20 @@ void FillLEDsFromPaletteColors( uint8_t colorIndex)
             leds[i] = ColorFromPalette( currentPalette, 0, brightness, currentBlending);
         else
             leds[i] = 0;
+    }
+}
+
+void XmasLEDs(uint8_t colorIndex)
+{
+    CRGB red = CHSV( HUE_RED, 255, 255);
+    CRGB green  = CHSV( HUE_GREEN, 255, 255);
+    uint8_t brightness = 255;
+
+    for( int i = 0; i < NUM_LEDS; i++) {
+        if(colorIndex % 2 == i % 2)
+            leds[i] = red;
+        else
+            leds[i] = green;
     }
 }
 
